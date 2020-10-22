@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TrackerLibrary;
 using TrackerLibrary.Models;
 
 namespace TrackerUI
@@ -22,7 +23,10 @@ namespace TrackerUI
         {
             InitializeComponent();
 
+            
             tournament = tournamentModel;
+
+            tournament.OnTournamentComplete += Tournament_OnTournamentComplete;
 
             WireUpLists();
 
@@ -30,6 +34,11 @@ namespace TrackerUI
             LoadFormData();
 
             LoadRounds();
+        }
+
+        private void Tournament_OnTournamentComplete(object sender, DateTime e)
+        {
+            this.Close();
         }
 
         private void LoadFormData()
@@ -125,38 +134,42 @@ namespace TrackerUI
         private void LoadMatchup(MatchupModel m)
         {
             //TODO - BUG
-            for (int i = 0; i < m.Entries.Count; i++)
+            if (m != null)
             {
-                if (i == 0)
+
+                for (int i = 0; i < m.Entries.Count; i++)
                 {
-                    if (m.Entries[0].TeamCompeting != null)
+                    if (i == 0)
                     {
-                        teamOneName.Text = m.Entries[0].TeamCompeting.TeamName;
-                        teamOneScoreValue.Text = m.Entries[0].Score.ToString();
+                        if (m.Entries[0].TeamCompeting != null)
+                        {
+                            teamOneName.Text = m.Entries[0].TeamCompeting.TeamName;
+                            teamOneScoreValue.Text = m.Entries[0].Score.ToString();
 
-                        teamTwoName.Text = "<bye>";
-                        teamTwoScoreValue.Text = "0";
-                    }
-                    else
-                    {
-                        teamOneName.Text = "Not Yet Set";
-                        teamOneScoreValue.Text = "";
-                    }
+                            teamTwoName.Text = "<bye>";
+                            teamTwoScoreValue.Text = "0";
+                        }
+                        else
+                        {
+                            teamOneName.Text = "Not Yet Set";
+                            teamOneScoreValue.Text = "";
+                        }
 
-                }
-                if (i == 1)
-                {
-                    if (m.Entries[1].TeamCompeting != null)
-                    {
-                        teamTwoName.Text = m.Entries[1].TeamCompeting.TeamName;
-                        teamTwoScoreValue.Text = m.Entries[1].Score.ToString();
                     }
-                    else
+                    if (i == 1)
                     {
-                        teamTwoName.Text = "Not Yet Set";
-                        teamTwoScoreValue.Text = "";                     
-                    }
+                        if (m.Entries[1].TeamCompeting != null)
+                        {
+                            teamTwoName.Text = m.Entries[1].TeamCompeting.TeamName;
+                            teamTwoScoreValue.Text = m.Entries[1].Score.ToString();
+                        }
+                        else
+                        {
+                            teamTwoName.Text = "Not Yet Set";
+                            teamTwoScoreValue.Text = "";
+                        }
 
+                    }
                 }
             }
         }
@@ -166,7 +179,35 @@ namespace TrackerUI
             LoadMatchup((MatchupModel)matchupListBox.SelectedItem);
 
         }
+        private string ValidateData()
+        {
+            string output = "";
 
+            double teamOneScore = 0;
+            double teamTwoScore = 0;
+
+            bool scoreOneValid = double.TryParse(teamOneScoreValue.Text, out teamOneScore);
+            bool scoreTwoValid = double.TryParse(teamTwoScoreValue.Text, out teamTwoScore);
+
+            if (!scoreOneValid)
+            {
+                output = "The Score One value is not a valid number.";
+            }
+            else if (!scoreTwoValid)
+            {
+                output = "The score Two value is not a valid number.";
+            }
+            else if (teamOneScore == 0 && teamTwoScore == 0)
+            {
+                output = "You did not enter a score for either team.";
+            }
+            else if(teamOneScore == teamTwoScore)
+            {
+                output = "No ties allowed here!";
+            }
+            return output;
+
+        }
         private void unplayedOnlyCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             LoadMatchups((int)roundDropDown.SelectedItem);
@@ -174,6 +215,12 @@ namespace TrackerUI
 
         private void scoreButton_Click(object sender, EventArgs e)
         {
+            string errorMessage = ValidateData();
+            if (errorMessage.Length>0)
+            {
+                MessageBox.Show($"Input Error: { errorMessage }");
+                return;
+            }
             MatchupModel m = (MatchupModel)matchupListBox.SelectedItem;
             double teamOneScore = 0;
             double teamTwoScore = 0;
@@ -218,21 +265,17 @@ namespace TrackerUI
                 }
             }
 
-            if (teamOneScore > teamTwoScore)
+            try
             {
-                //team one wins
-                m.Winner = m.Entries[0].TeamCompeting;
-            }
-            else if (teamTwoScore > teamOneScore)
-            {
-                m.Winner = m.Entries[1].TeamCompeting;
-            }
-            else
-            {
-                MessageBox.Show("Can't handle tie games!");
-            }
-            LoadMatchups((int)roundDropDown.SelectedItem);
+                TournamentLogic.UpdateTournamentResults(tournament);
 
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"The application ahd the following error: { ex.Message }");
+                return;
+            }          
+            LoadMatchups((int)roundDropDown.SelectedItem);
 
         }
     }
