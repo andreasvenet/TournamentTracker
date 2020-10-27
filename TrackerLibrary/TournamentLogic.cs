@@ -55,13 +55,16 @@ namespace TrackerLibrary
             toScore.ForEach(x => GlobalConfig.Connection.UpdateMatchup(x));
             int endingRound = model.CheckCurrentRound();
 
+            /*
             if (endingRound > startingRound)
             {
                 model.AlertUsersToNewRound();
 
             }
+            */
         }
-
+        // TODO - Email sending system under construction
+        /*
         public static void AlertUsersToNewRound(this TournamentModel model)
         {
             int currentRoundNumber = model.CheckCurrentRound();
@@ -78,7 +81,9 @@ namespace TrackerLibrary
                 }
             }
         }
+        */
 
+        /*
         private static void AlertPersonToNewRound(PersonModel p, string teamName, MatchupEntryModel competitor)
         {
             if (p.EmailAddress.Length == 0)
@@ -116,6 +121,7 @@ namespace TrackerLibrary
             EmailLogic.SendEmail(to, subject, body.ToString());
 
         }
+        */
         private static int CheckCurrentRound(this TournamentModel model)
         {
             int output = 1;
